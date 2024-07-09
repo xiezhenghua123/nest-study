@@ -1,30 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://unpkg.com/axios@0.24.0/dist/axios.min.js"></script>
-</head>
-<body>
-    <input id="fileInput" type="file" multiple/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>粒子扫描特效</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
     <script>
-        const fileInput = document.querySelector('#fileInput');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-        async function formData2() {
-            const data = new FormData();
-            data.set('name','光');
-            data.set('age', 20);
-            [...fileInput.files].forEach(item => {
-                data.append('aaa', item)
-            })
+      let lineY = 0;
 
-            const res = await axios.post('http://localhost:3000/aaa', data);
-            console.log(res);
+      class Particle {
+        constructor(x, y, opacity) {
+          this.x = x;
+          this.y = y;
+          this.size = Math.random() * 2 + 1;
+          this.speedY = Math.random() * 2 + 1;
+          this.opacity = opacity;
         }
+        update() {
+          this.y += this.speedY;
+          if (this.y > canvas.height) {
+            this.y = lineY;
+            this.x = Math.random() * canvas.width;
+          }
+        }
+        draw() {
+          ctx.fillStyle = `rgba(0, 173, 181, ${this.opacity})`;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
 
-        fileInput.onchange = formData2;
+      const particlesArray = [];
+      function init() {
+        for (let i = 0; i < 500; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          const opacity = 1 - y / canvas.height;
+          particlesArray.push(new Particle(x, y, opacity));
+        }
+      }
+
+      function handleParticles() {
+        for (let i = 0; i < particlesArray.length; i++) {
+          if (particlesArray[i].y >= lineY) {
+            particlesArray[i].update();
+            particlesArray[i].draw();
+          }
+        }
+        generateParticles();
+      }
+
+      function drawLine() {
+        ctx.strokeStyle = '#00adb5';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, lineY);
+        ctx.lineTo(canvas.width, lineY);
+        ctx.stroke();
+      }
+
+      function generateParticles() {
+        const density = 5; // 控制粒子生成的密度
+        for (let i = 0; i < density; i++) {
+          const x = Math.random() * canvas.width;
+          const y = lineY + Math.random() * (canvas.height - lineY);
+          const opacity = 1 - y / canvas.height;
+          if (Math.random() < (canvas.height - y) / canvas.height) {
+            particlesArray.push(new Particle(x, y, opacity));
+          }
+        }
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawLine();
+        handleParticles();
+        lineY += 2;
+        if (lineY > canvas.height) {
+          lineY = 0;
+        }
+        requestAnimationFrame(animate);
+      }
+
+      init();
+      animate();
     </script>
-</body>
+  </body>
 </html>
